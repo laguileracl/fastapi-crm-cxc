@@ -1,19 +1,21 @@
+import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 
-from app.database import Base, engine
+from app.database import init_models
 from app.routers import client
+from app.routers import users
+from app.routers import admin
 
-from app.users import fastapi_users, current_active_user, auth_backend
-from app.models.user import User
-from app.schemas.user import UserRead, UserCreate
+from app.users import fastapi_users, auth_backend
+from app.schemas.user import UserRead, UserCreate, UserUpdate
 
-# Crea la app FastAPI
+# Crear instancia de la aplicación
 app = FastAPI()
 
-# CORS
+# Middleware CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,36 +24,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers de auth
+# Rutas de autenticación
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
     tags=["auth"],
 )
-
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["auth"],
 )
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["users"],
+)
 
-# Router de clients
+# Rutas de cliente
 app.include_router(client.router)
+app.include_router(users.router)
+app.include_router(admin.router)
 
-# Crear tablas al iniciar
+
+# Evento asíncrono para inicializar tablas
 @app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
+async def on_startup():
+    await init_models()
 
-# Endpoint raíz
+# Ruta principal
 @app.get("/")
 async def read_root():
     return {"message": "Welcome to the FastAPI CRM application!"}
 
-# Configuración Jinja2
+# Configuración para Jinja2
 templates = Jinja2Templates(directory="app/templates")
 
-# Endpoint para la UI
 @app.get("/clients-ui", response_class=HTMLResponse)
 async def clients_ui(request: Request):
     return templates.TemplateResponse("clients.html", {"request": request})
