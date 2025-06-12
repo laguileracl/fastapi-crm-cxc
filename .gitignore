@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# SQLite DB
+crm.db
+
+# Virtualenv
+venv/
+ENV/
+env/
+.venv/
+
+# VSCode
+.vscode/
+
+# Mac OS
+.DS_Store
+
+# Logs
+*.log
+*.log.*
+
+# Temp files
+*.swp
+*.tmp
+*~
