@@ -4,17 +4,24 @@ from typing import List
 import pandas as pd
 
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse
-from app.crud import client as crud_client
+import app.crud.client as crud_client
 from app.database import get_db
+from app.users import current_active_user
+from app.models.user import User
+
+import logging
+
+logger = logging.getLogger("crm_logger")
+logging.basicConfig(level=logging.INFO)
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
-# GET listado clientes
+# GET listado clientes → sin protección (abierto)
 @router.get("/", response_model=List[ClientResponse])
 def read_clients(skip: int = 0, limit: int = 100, all: bool = False, db: Session = Depends(get_db)):
     return crud_client.get_clients(db, skip=skip, limit=limit, include_inactive=all)
 
-# GET cliente por id
+# GET cliente por id → sin protección (abierto)
 @router.get("/{id}", response_model=ClientResponse)
 def read_client(id: int, db: Session = Depends(get_db)):
     db_client = crud_client.get_client(db, id=id)
@@ -22,15 +29,24 @@ def read_client(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Client not found")
     return db_client
 
-# POST crear cliente
+# POST crear cliente → protegido con JWT
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
-def create_client(client: ClientCreate, db: Session = Depends(get_db)):
+def create_client(
+    client: ClientCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
     db_client = crud_client.get_client_by_card_code(db, card_code=client.card_code)
     if db_client:
         raise HTTPException(status_code=400, detail="CardCode already registered")
-    return crud_client.create_client(db, client)
+    
+    new_client = crud_client.create_client(db, client)
 
-# PUT actualizar cliente
+    logger.info(f"[USER {user.email}] Created new Client ID {new_client.id} with CardCode {new_client.card_code} and Name '{new_client.name}'")
+
+    return new_client
+
+# PUT actualizar cliente → puedes dejar abierto o proteger si quieres (aquí lo dejo abierto como ejemplo)
 @router.put("/{id}", response_model=ClientResponse)
 def update_client(id: int, client_update: ClientUpdate, db: Session = Depends(get_db)):
     db_client = crud_client.get_client(db, id=id)
@@ -38,17 +54,27 @@ def update_client(id: int, client_update: ClientUpdate, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail="Client not found")
     return crud_client.update_client(db, db_client, client_update)
 
-# DELETE cliente (soft delete)
+# DELETE cliente (soft delete) → protegido con JWT
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_client(id: int, db: Session = Depends(get_db)):
+def delete_client(
+    id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
     db_client = crud_client.get_client(db, id=id)
     if not db_client:
         raise HTTPException(status_code=404, detail="Client not found")
     crud_client.delete_client(db, db_client)
 
-# POST upload Excel
+    logger.info(f"[USER {user.email}] Soft deleted Client ID {db_client.id} (CardCode {db_client.card_code})")
+
+# POST upload Excel → protegido con JWT
 @router.post("/upload-excel")
-def upload_clients_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
+def upload_clients_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
     df = pd.read_excel(file.file)
     df.columns = df.columns.str.strip()
 
@@ -68,11 +94,9 @@ def upload_clients_excel(file: UploadFile = File(...), db: Session = Depends(get
     for _, row in df.iterrows():
         card_code = str(row['Código SN']).strip()
 
-        # FILTRAR: solo clientes que comienzan con "C"
         if not card_code.startswith("C"):
             continue
 
-        # Preparar datos
         client_data = {
             "card_code": card_code,
             "name": row['Nombre de socio de negocios'],
@@ -99,14 +123,14 @@ def upload_clients_excel(file: UploadFile = File(...), db: Session = Depends(get
         existing_client = crud_client.get_client_by_card_code(db, card_code=card_code)
 
         if existing_client:
-            # Hacer update solo si hay cambios
             update_schema = ClientUpdate(**client_data)
             crud_client.update_client(db, existing_client, update_schema)
         else:
-            # Crear cliente nuevo
             create_schema = ClientCreate(**client_data)
             crud_client.create_client(db, create_schema)
 
         processed_clients += 1
+
+    logger.info(f"[USER {user.email}] Upload Excel processed {processed_clients} clients")
 
     return {"detail": f"{processed_clients} clients processed successfully"}
