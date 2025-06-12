@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clients</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <h2 class="mb-4">Client Management</h2>
+
+    <!-- Client Form -->
+    <div class="card mb-4">
+        <div class="card-header">Add / Update Client</div>
+        <div class="card-body">
+            <form id="client-form">
+                <input type="hidden" id="client-id">
+
+                <div class="row mb-3">
+                    <div class="col">
+                        <label for="card_code" class="form-label">Card Code *</label>
+                        <input type="text" class="form-control" id="card_code" required>
+                    </div>
+                    <div class="col">
+                        <label for="name" class="form-label">Name *</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    <div class="col">
+                        <label for="rut" class="form-label">RUT *</label>
+                        <input type="text" class="form-control" id="rut" required>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col">
+                        <label for="credit_line_amount" class="form-label">Credit Line Amount</label>
+                        <input type="number" step="0.01" class="form-control" id="credit_line_amount">
+                    </div>
+                    <div class="col">
+                        <label for="current_outstanding_balance" class="form-label">Outstanding Balance</label>
+                        <input type="number" step="0.01" class="form-control" id="current_outstanding_balance">
+                    </div>
+                    <div class="col">
+                        <label for="account_manager" class="form-label">Account Manager</label>
+                        <input type="text" class="form-control" id="account_manager">
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="is_active" checked>
+                    <label class="form-check-label" for="is_active">Active</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Client</button>
+                <button type="reset" class="btn btn-secondary ms-2" id="reset-btn">Clear</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Clients List -->
+    <div class="card">
+        <div class="card-header">Clients List</div>
+        <div class="card-body">
+            <table class="table table-striped" id="clients-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Card Code</th>
+                        <th>Name</th>
+                        <th>RUT</th>
+                        <th>Credit Line</th>
+                        <th>Available Credit</th>
+                        <th>Outstanding Balance</th>
+                        <th>Account Manager</th>
+                        <th>Active</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Client rows will be inserted here by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Comments section -->
+    <div class="card mt-5" id="comments-section" style="display: none;">
+        <div class="card-header">
+            Comments for <span id="comments-client-name"></span>
+        </div>
+        <div class="card-body">
+
+            <!-- LOADING SPINNER -->
+            <div id="comments-loading" class="text-center my-3" style="display: none;">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <!-- COMMENTS LIST -->
+            <ul class="list-group mb-3" id="comments-list">
+                <!-- Comments will be inserted here by JS -->
+            </ul>
+
+            <!-- ADD COMMENT FORM -->
+            <form id="comment-form">
+                <div class="mb-3">
+                    <label class="form-label">New Comment</label>
+                    <textarea class="form-control" id="comment-text" rows="2" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Comment</button>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Main JS -->
+<script>
+    $(document).ready(function() {
+        $('#clients-table').DataTable({
+            pageLength: 10,
+            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+            order: [[ 0, "asc" ]],
+            dom: 'lfrtip'
+        });
+    });
+
+    async function renderTable() {
+        const response = await fetch('/clients');
+        const clients = await response.json();
+
+        $('#clients-table').DataTable().clear().destroy();
+
+        const tbody = document.querySelector("#clients-table tbody");
+        tbody.innerHTML = "";
+        clients.forEach(client => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${client.id}</td>
+                <td>${client.card_code}</td>
+                <td>${client.name}</td>
+                <td>${client.rut}</td>
+                <td>${client.credit_line_amount}</td>
+                <td>${client.credit_line_available}</td>
+                <td>${client.current_outstanding_balance}</td>
+                <td>${client.account_manager || ""}</td>
+                <td>${client.is_active ? "Yes" : "No"}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="editClient(${client.id})">Edit</button>
+                    <button class="btn btn-sm btn-info ms-1" onclick="loadComments(${client.id}, '${client.name}')">Comments</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        $('#clients-table').DataTable({
+            pageLength: 10,
+            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "All"] ],
+            order: [[ 0, "asc" ]],
+            dom: 'lfrtip'
+        });
+    }
+
+    document.getElementById("client-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+
+        const clientData = {
+            card_code: document.getElementById("card_code").value,
+            name: document.getElementById("name").value,
+            rut: document.getElementById("rut").value,
+            credit_line_amount: parseFloat(document.getElementById("credit_line_amount").value) || 0,
+            current_outstanding_balance: parseFloat(document.getElementById("current_outstanding_balance").value) || 0,
+            account_manager: document.getElementById("account_manager").value,
+            is_active: document.getElementById("is_active").checked
+        };
+
+        const clientId = document.getElementById("client-id").value;
+
+        if (clientId) {
+            await fetch(`/clients/${clientId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(clientData)
+            });
+        } else {
+            await fetch("/clients", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(clientData)
+            });
+        }
+
+        this.reset();
+        document.getElementById("client-id").value = "";
+        renderTable();
+    });
+
+    document.getElementById("reset-btn").addEventListener("click", function() {
+        document.getElementById("client-id").value = "";
+    });
+
+    window.editClient = async function(id) {
+        const response = await fetch(`/clients/${id}`);
+        const client = await response.json();
+
+        document.getElementById("client-id").value = client.id;
+        document.getElementById("card_code").value = client.card_code;
+        document.getElementById("name").value = client.name;
+        document.getElementById("rut").value = client.rut;
+        document.getElementById("credit_line_amount").value = client.credit_line_amount;
+        document.getElementById("current_outstanding_balance").value = client.current_outstanding_balance;
+        document.getElementById("account_manager").value = client.account_manager;
+        document.getElementById("is_active").checked = client.is_active;
+    };
+
+    async function loadComments(clientId, clientName) {
+        document.getElementById("comments-client-name").innerText = clientName;
+        document.getElementById("comments-section").style.display = "block";
+        document.getElementById("comments-loading").style.display = "block";
+
+        const response = await fetch(`/client-comments/${clientId}`);
+        const comments = await response.json();
+
+        document.getElementById("comments-loading").style.display = "none";
+
+        const list = document.getElementById("comments-list");
+        list.innerHTML = "";
+        comments.forEach(comment => {
+            const li = document.createElement("li");
+            li.className = "list-group-item";
+            li.innerHTML = `
+                <strong>${comment.created_by}</strong> (${new Date(comment.created_at).toLocaleString()}):<br>
+                ${comment.comment_text}
+                <br>
+                <button class="btn btn-sm btn-danger mt-2" onclick="deleteComment(${comment.id}, ${clientId}, '${clientName}')">Delete</button>
+            `;
+            list.appendChild(li);
+        });
+
+        const commentForm = document.getElementById("comment-form");
+        commentForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const commentText = document.getElementById("comment-text").value;
+            if (!commentText) return;
+
+            await fetch("/client-comments", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    client_id: clientId,
+                    comment_text: commentText,
+                    created_by: "laa"
+                })
+            });
+
+            document.getElementById("comment-text").value = "";
+            loadComments(clientId, clientName);
+        };
+    }
+
+    async function deleteComment(commentId, clientId, clientName) {
+        await fetch(`/client-comments/${commentId}`, {
+            method: "DELETE"
+        });
+        loadComments(clientId, clientName);
+    }
+
+    // Initial render
+    renderTable();
+</script>
+
+</body>
+</html>
