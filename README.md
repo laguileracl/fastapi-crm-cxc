@@ -8,11 +8,11 @@ Proyecto en desarrollo: **Sistema CRM + ERP** para la gestión de cuentas por co
 
 Construir un sistema interno tipo *ERP / CRM* con:
 
-👉 Gestión de clientes\
-👉 Importación inteligente de planilla de *Master de Clientes* (controlada por SAP)\
-👉 Visualización de cartera de clientes en forma dinámica\
-👉 Gestión de comentarios históricos por cliente\
-👉 Control de líneas de crédito, riesgos y pagos\
+👉 Gestión de clientes
+👉 Importación inteligente de planilla de *Master de Clientes* (controlada por SAP)
+👉 Visualización de cartera de clientes en forma dinámica
+👉 Gestión de comentarios históricos por cliente
+👉 Control de líneas de crédito, riesgos y pagos
 👉 Preparado para extender a integración con **facturas**, **pagos**, **gestión de cobranzas**
 
 ---
@@ -51,24 +51,24 @@ README.md                        # Este documento
 
 ## ⚙️ Features actuales
 
-👉 CRUD completo de clientes\
-👉 Importación incremental de planilla `BusinessPartners.xlsx`\
-👉 Control de *clientes activos / inactivos*\
-👉 Cálculo automático de línea de crédito disponible\
-👉 Sistema de comentarios histórico con autor + timestamp\
+👉 CRUD completo de clientes
+👉 Importación incremental de planilla `BusinessPartners.xlsx`
+👉 Control de *clientes activos / inactivos*
+👉 Cálculo automático de línea de crédito disponible
+👉 Sistema de comentarios histórico con autor + timestamp
 👉 API REST moderna (listo para futura integración a frontend más avanzado)
 
 ---
 
 ## ✈️ Roadmap
 
-🔺 Optimizar carga incremental de planilla (parsing optimizado)\
-🔺 Mejorar interfaz de comentarios (mostrar timeline bonito)\
-🔺 Agregar módulo Facturas\
-🔺 Agregar módulo Pagos\
-🔺 Reportes de cartera / aging de cuentas\
-🔺 Autenticación y control de permisos (login con RSM, Admin, etc.)\
-🔺 Exportación de reportes en Excel / PDF\
+🔺 Optimizar carga incremental de planilla (parsing optimizado)
+🔺 Mejorar interfaz de comentarios (mostrar timeline bonito)
+🔺 Agregar módulo Facturas
+🔺 Agregar módulo Pagos
+🔺 Reportes de cartera / aging de cuentas
+🔺 Autenticación y control de permisos (login con RSM, Admin, etc.)
+🔺 Exportación de reportes en Excel / PDF
 🔺 Despliegue en servidor interno (dockerización)
 
 ---
@@ -92,8 +92,7 @@ La estructura de la planilla `BusinessPartners.xlsx` y su lógica están documen
 
 ## 🤝 Autor
 
-Luis A. - 2025\
+Luis A. - 2025
 Proyecto privado / uso interno
 
 ---
-
