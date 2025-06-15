@@ -23,6 +23,7 @@ class ClientBase(BaseModel):
     email: Optional[EmailStr] = None
     contact_person: Optional[str] = None
     is_active: Optional[bool] = True
+    client_type: Optional[str] = None  # <--- Nuevo campo agregado
 
 class ClientCreate(ClientBase):
     pass
@@ -47,6 +48,7 @@ class ClientUpdate(BaseModel):
     email: Optional[EmailStr] = None
     contact_person: Optional[str] = None
     is_active: Optional[bool] = None
+    client_type: Optional[str] = None  # <--- Nuevo campo agregado
 
 class ClientResponse(ClientBase):
     id: int
@@ -55,4 +57,4 @@ class ClientResponse(ClientBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True  # reemplazo de orm_mode en Pydantic v2
+        from_attributes = True  # Pydantic v2: reemplazo de orm_mode
